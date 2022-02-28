@@ -1,0 +1,109 @@
+service: tubbysea
+
+package:
+  individually: true
+
+provider:
+  name: aws
+  runtime: nodejs14.x
+  memorySize: 250
+  region: eu-central-1
+  endpointType: REGIONAL # Set to regional because the api gateway will be behind a cloudfront distribution
+  stage: prod
+  tracing: # Enable X-Ray tracing (debugging)
+    apiGateway: true
+    lambda: true
+  iamRoleStatements:
+    - Effect: Allow # X-Ray permissions
+      Action:
+        - xray:PutTraceSegments
+        - xray:PutTelemetryRecords
+      Resource: "*"
+    - Effect: "Allow"
+      Action:
+        - dynamodb:DescribeTable
+        - dynamodb:Query
+        - dynamodb:Scan
+        - dynamodb:GetItem
+        - dynamodb:PutItem
+        - dynamodb:UpdateItem
+        - dynamodb:DeleteItem
+        - dynamodb:BatchGetItem
+      Resource:
+        - "Fn::GetAtt": [DynamoTable, Arn]
+    - Effect: Allow # Lambda logs on cloudwatch
+      Action:
+        - logs:CreateLogGroup
+        - logs:CreateLogStream
+        - logs:PutLogEvents
+      Resource:
+        - "Fn::Join":
+            - ":"
+            - - "arn:aws:logs"
+              - Ref: "AWS::Region"
+              - Ref: "AWS::AccountId"
+              - "log-group:/aws/lambda/*:*:*"
+    # For warm-up functions
+    - Effect: "Allow"
+      Action:
+        - "lambda:InvokeFunction"
+      Resource: "*"
+    - Effect: "Allow"
+      Action:
+        - "s3:ListBucket"
+        - "s3:*Object*"
+      Resource: "*"
+  environment:
+    PRIVATE_KEY: ${file(./env.js):PRIVATE_KEY}
+    OPENSEA_APIKEY: ${file(./env.js):OPENSEA_APIKEY}
+    tableName: ${self:custom.tableName}
+    stage: ${self:custom.stage}
+
+custom:
+  stage: ${opt:stage, self:provider.stage}
+  webpack:
+    webpackConfig: ./webpack.config.js
+    includeModules: true
+    packager: "npm"
+    excludeFiles: src/**/*.test.ts
+  prune:
+    automatic: true
+    number: 5 # Number of versions to keep
+  tableName: prod-table
+  domainMap:
+    prod:
+      domain: api.tubbysea.com
+      certificateArn: "arn:aws:acm:eu-central-1:249187628721:certificate/a808a1fe-4c4e-4584-bcfa-2098806a969a"
+      hostedZone: tubbysea.com
+  domain: ${self:custom.domainMap.${self:custom.stage}.domain}
+  certificateArn: ${self:custom.domainMap.${self:custom.stage}.certificateArn}
+  hostedZone: ${self:custom.domainMap.${self:custom.stage}.hostedZone}
+
+functions:
+  getQuote:
+    handler: src/getQuote.default
+    timeout: 120
+    memorySize: 2000
+    events:
+      - http:
+          path: quote/tubby
+          method: get
+  storeFloorPrice:
+    handler: src/storeFloorPrice.default
+    timeout: 60
+    memorySize: 3000
+    events:
+      - schedule: cron(0 * * * ? *)
+
+resources:
+  # CORS for api gateway errors
+  - ${file(resources/api-gateway-errors.yml)}
+  # DynamoDB
+  - ${file(resources/dynamodb-table.yml)}
+  # Cloudfront API distribution
+  - ${file(resources/api-cloudfront-distribution.yml)}
+
+plugins:
+  - serverless-webpack-fixed
+  - serverless-offline
+  - serverless-prune-plugin
