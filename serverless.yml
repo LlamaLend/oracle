@@ -73,7 +73,7 @@ custom:
   domainMap:
     prod:
       domain: api.tubbysea.com
-      certificateArn: "arn:aws:acm:eu-central-1:249187628721:certificate/a808a1fe-4c4e-4584-bcfa-2098806a969a"
+      certificateArn: "arn:aws:acm:us-east-1:249187628721:certificate/f8230c4f-7cf4-49c5-90d0-e5c49bcef4b6"
       hostedZone: tubbysea.com
   domain: ${self:custom.domainMap.${self:custom.stage}.domain}
   certificateArn: ${self:custom.domainMap.${self:custom.stage}.certificateArn}
