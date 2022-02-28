@@ -15,7 +15,7 @@ jobs:
         node-version: '14.x'
     - run: npm ci
     - name: Deploy infrastructure stack
-      run: npm run deploy:prod
+      run: npm run deploy
       env:
         PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
         OPENSEA_APIKEY: ${{ secrets.OPENSEA_APIKEY }}
