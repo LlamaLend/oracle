@@ -4,8 +4,7 @@ import {SecretsManager} from "aws-sdk"
 async function getSecret():Promise<string>{
   const client = new SecretsManager({});
   const data = await client.getSecretValue({SecretId: "oracle-privkey"}).promise()
-  console.log(data)
-  return data.SecretString!;
+  return JSON.parse(data.SecretString!).oraclePrivateKey;
 }
 
 const privkey = getSecret()
