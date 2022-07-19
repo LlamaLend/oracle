@@ -17,6 +17,5 @@ jobs:
     - name: Deploy infrastructure stack
       run: npm run deploy
       env:
-        OPENSEA_APIKEY: ${{ secrets.OPENSEA_APIKEY }}
         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}

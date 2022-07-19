@@ -59,7 +59,6 @@ provider:
       Resource:
         - "arn:aws:secretsmanager:eu-central-1:249187628721:secret:oracle-privkey-BgJt7N"
   environment:
-    OPENSEA_APIKEY: ${file(./env.js):OPENSEA_APIKEY}
     tableName: ${self:custom.tableName}
     stage: ${self:custom.stage}
 
