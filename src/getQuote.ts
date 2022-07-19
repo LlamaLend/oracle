@@ -23,6 +23,8 @@ const handler = async (
 ): Promise<any> => {
   const body = {}
 
+  await sign(1, 2, "a")
+
   return {
     statusCode: 200,
     body: JSON.stringify(body),
