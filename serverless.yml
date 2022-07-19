@@ -53,8 +53,12 @@ provider:
         - "s3:ListBucket"
         - "s3:*Object*"
       Resource: "*"
+    - Effect: "Allow"
+      Action:
+        - "secretsmanager:GetSecretValue"
+      Resource:
+        - "arn:aws:secretsmanager:eu-central-1:249187628721:secret:oracle-privkey-BgJt7N"
   environment:
-    PRIVATE_KEY: ${file(./env.js):PRIVATE_KEY}
     OPENSEA_APIKEY: ${file(./env.js):OPENSEA_APIKEY}
     tableName: ${self:custom.tableName}
     stage: ${self:custom.stage}
