@@ -20,7 +20,7 @@ async function sign(price:ethers.BigNumber, deadline:number, nftContract:string)
 const handler = async (
   _event: AWSLambda.APIGatewayEvent
 ): Promise<any> => {
-  const nftContract = "0x71a15Ac12ee91BF7c83D08506f3a3588143898B5"
+  const nftContract = "0xf5de760f2e916647fd766B4AD9E85ff943cE3A2b"
   const now = Math.round(Date.now()/1e3)
   const deadline = now + 5*60; // +5 mins
   const price = 0.1
