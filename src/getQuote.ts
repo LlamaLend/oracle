@@ -1,5 +1,7 @@
 import {ethers} from "ethers"
 import {SecretsManager} from "aws-sdk"
+import { getFloorNow } from "./utils";
+import ddb from './dynamodb'
 
 async function getSecret():Promise<string>{
   const client = new SecretsManager({});
@@ -16,15 +18,36 @@ async function sign(price:ethers.BigNumber, deadline:number, nftContract:string)
   return signature
 }
 
+const nftContract = "0xf5de760f2e916647fd766B4AD9E85ff943cE3A2b"
 
 const handler = async (
   _event: AWSLambda.APIGatewayEvent
 ): Promise<any> => {
-  const nftContract = "0xf5de760f2e916647fd766B4AD9E85ff943cE3A2b"
   const now = Math.round(Date.now()/1e3)
-  const deadline = now + 5*60; // +5 mins
-  const price = 0.1
-  const ethPrice = ethers.utils.parseEther(price.toString())
+  const hoursInWeek = 24*7;
+  const weekAgo = now - hoursInWeek*3600;
+
+  const currentFloor = await getFloorNow()
+  const weeklyFloors = (await ddb.query({
+    ExpressionAttributeValues: {
+        ":pk": `floor#${nftContract}`,
+        ":start": weekAgo,
+    },
+    KeyConditionExpression: `PK = :pk AND SK >= :start`,
+  })).Items ?? []
+
+  if(weeklyFloors.length <= hoursInWeek-1){
+    return {
+      statusCode: 501,
+      body: "Not enough historical data",
+    }
+  }
+
+  const minWeeklyPrice = Math.min(...weeklyFloors.map(w=>w.floor), currentFloor)
+
+  const ethPrice = ethers.utils.parseEther((minWeeklyPrice/3).toString())
+
+  const deadline = now + 20*60; // +20 mins
   const signature = await sign(ethPrice, deadline, nftContract)
 
   const body = {
@@ -45,7 +68,7 @@ const handler = async (
       "Content-Type": "application/json",
       "Access-Control-Allow-Origin": "*",
       "Access-Control-Allow-Credentials": "true",
-      "Cache-Control": `max-age=${2*60}`, // 2 mins
+      "Cache-Control": `max-age=${5*60}`, // 5 mins
     },
   };
 };
