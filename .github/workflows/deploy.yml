@@ -14,6 +14,9 @@ jobs:
       with:
         node-version: '14.x'
     - run: npm ci
+    - run: |
+      rm -rf node_modules/sharp
+      SHARP_IGNORE_GLOBAL_LIBVIPS=1 npm install --arch=x64 --platform=linux --libc=glibc sharp
     - name: Deploy infrastructure stack
       run: npm run deploy
       env:
