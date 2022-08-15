@@ -1,5 +1,6 @@
 import { fetchIpfsUrl } from "./utils";
 import sharp from "sharp";
+import { join } from "path";
 const overlayImage = require("./overlays/tubby.png");
 
 const handler = async (
@@ -8,7 +9,7 @@ const handler = async (
     const imageUrl = event.pathParameters!.imageUrl!;
     const realUrl = new Buffer(imageUrl, 'base64').toString()
     const imageData = await fetchIpfsUrl(realUrl).then(r => r.arrayBuffer())
-    const { data: overlay } = await sharp(overlayImage)
+    const { data: overlay } = await sharp(join(__dirname, '..', overlayImage))
         .resize({
             fit: sharp.fit.contain, // Pass in the fit type.
             height: 2000, // Let's make it a little smaller than the underlying image.
