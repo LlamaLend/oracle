@@ -18,9 +18,9 @@ const handler = async (
         .toBuffer({ resolveWithObject: true })
     const composed = await sharp(Buffer.from(imageData))
         .resize(2000, 2000)
-        .composite([{
+        /*.composite([{
             input: overlay
-        }])
+        }])*/
         .toBuffer()
     return {
         statusCode: 200,
