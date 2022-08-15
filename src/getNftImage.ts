@@ -27,6 +27,7 @@ const handler = async (
         body: composed.toString("base64"),
         headers: {
             "Content-Type": "image/png",
+            "Cache-Control": `max-age=${24*3600}`, // 24 h
         },
         isBase64Encoded: true
     }
