@@ -24,7 +24,11 @@ module.exports = {
       {
         test: /\.mjs$/,
         resolve: { mainFields: ["default"] }
-      }
+      },
+      {
+        test: /\.(png|svg|jpg|jpeg|gif)$/i,
+        type: 'asset/resource',
+      },
     ],
   },
   externals: ["sharp", "ethers"],
