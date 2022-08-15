@@ -114,6 +114,7 @@ functions:
       - http:
           path: image/{imageUrl}
           method: get
+          integration: lambda
           response:
             contentHandling: CONVERT_TO_BINARY
   storeFloorPrice:
