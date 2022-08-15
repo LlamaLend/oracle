@@ -110,6 +110,8 @@ functions:
       - http:
           path: image/{imageUrl}
           method: get
+          response:
+            contentHandling: CONVERT_TO_BINARY
   storeFloorPrice:
     handler: src/storeFloorPrice.default
     timeout: 60
