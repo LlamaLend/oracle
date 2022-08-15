@@ -44,7 +44,6 @@ Resources:
             QueryString: 'false'
             Cookies:
               Forward: none
-          DefaultTTL: 0
           TargetOriginId: ApiGateway
           ViewerProtocolPolicy: redirect-to-https
         CustomErrorResponses: []
