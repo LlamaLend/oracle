@@ -1,7 +1,7 @@
 import { ethers } from "ethers"
 import { fetchIpfsUrl } from "./utils";
 
-const tubbyNftContract = "0xf5de760f2e916647fd766B4AD9E85ff943cE3A2b".toLowerCase()
+const tubbyNftContract = "0xCa7cA7BcC765F77339bE2d648BA53ce9c8a262bD".toLowerCase()
 const provider = new ethers.providers.CloudflareProvider()
 
 const handler = async (
