@@ -27,6 +27,9 @@ module.exports = {
       }
     ],
   },
+  externals: {
+    'sharp': 'commonjs sharp'
+  },
   resolve: {
     extensions: ['.ts', '.js', '.json'],
     alias: {

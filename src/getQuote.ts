@@ -36,7 +36,7 @@ const handler = async (
     KeyConditionExpression: `PK = :pk AND SK >= :start`,
   })).Items ?? []
 
-  if(weeklyFloors.length <= hoursInWeek-1){
+  if(weeklyFloors.length <= (hoursInWeek - 1)){
     return {
       statusCode: 501,
       body: "Not enough historical data",

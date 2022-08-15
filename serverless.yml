@@ -91,6 +91,22 @@ functions:
       - http:
           path: quote/tubby
           method: get
+  getNftMetadata:
+    handler: src/getNftMetadata.default
+    timeout: 120
+    memorySize: 2000
+    events:
+      - http:
+          path: nft/ethereum/{nftContract}/{nftId}
+          method: get
+  getNftImage:
+    handler: src/getNftImage.default
+    timeout: 120
+    memorySize: 2000
+    events:
+      - http:
+          path: image/{imageUrl}
+          method: get
   storeFloorPrice:
     handler: src/storeFloorPrice.default
     timeout: 60
