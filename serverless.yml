@@ -10,6 +10,10 @@ provider:
   region: eu-central-1
   endpointType: REGIONAL # Set to regional because the api gateway will be behind a cloudfront distribution
   stage: prod
+  apiGateway:
+    binaryMediaTypes:
+      - 'image/png'
+      - 'image/jpeg'
   tracing: # Enable X-Ray tracing (debugging)
     apiGateway: true
     lambda: true
