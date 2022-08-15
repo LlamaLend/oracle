@@ -11,16 +11,16 @@ const handler = async (
     const imageData = await fetchIpfsUrl(realUrl).then(r => r.arrayBuffer())
     const { data: overlay } = await sharp(join(__dirname, '..', overlayImage))
         .resize({
-            fit: sharp.fit.contain, // Pass in the fit type.
-            height: 2000, // Let's make it a little smaller than the underlying image.
+            fit: sharp.fit.contain,
+            height: 2000,
             width: 2000
         })
         .toBuffer({ resolveWithObject: true })
     const composed = await sharp(Buffer.from(imageData))
         .resize(2000, 2000)
-        /*.composite([{
+        .composite([{
             input: overlay
-        }])*/
+        }])
         .toBuffer()
     return {
         statusCode: 200,
