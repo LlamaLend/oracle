@@ -25,7 +25,8 @@ const handler = async (
         body: composed.toString("base64"),
         headers: {
             "Content-Type": "image/png",
-        }
+        },
+        isBase64Encoded: true
     }
 }
 /*
