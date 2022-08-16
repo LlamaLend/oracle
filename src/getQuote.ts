@@ -31,7 +31,7 @@ const handler = async (
   const weeklyFloors = (await ddb.query({
     ExpressionAttributeValues: {
         ":pk": `floor#${tubbyAddress}`,
-        ":start": weekAgo,
+        ":start": weekAgo*1000,
     },
     KeyConditionExpression: `PK = :pk AND SK >= :start`,
   })).Items ?? []
