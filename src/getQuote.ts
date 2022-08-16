@@ -1,6 +1,6 @@
 import {ethers} from "ethers"
 import {SecretsManager} from "aws-sdk"
-import { getFloorNow } from "./utils";
+import { getFloorNow, tubbyAddress } from "./utils";
 import ddb from './dynamodb'
 
 async function getSecret():Promise<string>{
@@ -30,7 +30,7 @@ const handler = async (
   const currentFloor = await getFloorNow()
   const weeklyFloors = (await ddb.query({
     ExpressionAttributeValues: {
-        ":pk": `floor#${nftContract}`,
+        ":pk": `floor#${tubbyAddress}`,
         ":start": weekAgo,
     },
     KeyConditionExpression: `PK = :pk AND SK >= :start`,
