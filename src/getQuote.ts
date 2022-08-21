@@ -18,7 +18,7 @@ async function sign(price:ethers.BigNumber, deadline:number, nftContract:string)
   return signature
 }
 
-const nftContract = "0xf5de760f2e916647fd766B4AD9E85ff943cE3A2b"
+const nftContract = "0x73243f724272d5049314428f848e2a4bb273e630"
 
 const handler = async (
   _event: AWSLambda.APIGatewayEvent
