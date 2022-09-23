@@ -48,11 +48,6 @@ provider:
               - Ref: "AWS::Region"
               - Ref: "AWS::AccountId"
               - "log-group:/aws/lambda/*:*:*"
-    # For warm-up functions
-    - Effect: "Allow"
-      Action:
-        - "lambda:InvokeFunction"
-      Resource: "*"
     - Effect: "Allow"
       Action:
         - "s3:ListBucket"
@@ -99,24 +94,6 @@ functions:
       - http:
           path: quote/tubby
           method: get
-  getNftMetadata:
-    handler: src/getNftMetadata.default
-    timeout: 120
-    memorySize: 2000
-    events:
-      - http:
-          path: nft/ethereum/{nftContract}/{nftId}
-          method: get
-  getNftImage:
-    handler: src/getNftImage.default
-    timeout: 120
-    memorySize: 2000
-    events:
-      - http:
-          path: image/{imageUrl}
-          method: get
-          response:
-            contentHandling: CONVERT_TO_BINARY
   storeFloorPrice:
     handler: src/storeFloorPrice.default
     timeout: 60
