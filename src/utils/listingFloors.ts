@@ -18,7 +18,7 @@ async function reservoirFloor(collection: string, reservoirApiKey: string){
                 'x-api-key': reservoirApiKey 
             }
         }).then(r => r.json());
-        const floors = changes.events.filter((event:any)=>event.floorAsk.tokenId === "3740").map((event:any)=> event.floorAsk.price)
+        const floors = changes.events.map((event:any)=> event.floorAsk.price)
         if(currentFloor === undefined){
             // First run
             currentFloor = floors[0]
@@ -27,6 +27,9 @@ async function reservoirFloor(collection: string, reservoirApiKey: string){
         weeklyMinimum = Math.min(weeklyMinimum, ...floors)
         continuation = changes.continuation;
     } while(continuation !== null)
+    if(currentFloor === undefined){
+        throw new Error(`Can't find any historical data for ${collection} on Reservoir`)
+    }
     return {
         currentFloor,
         weeklyMinimum
@@ -65,7 +68,6 @@ export async function getCurrentAndHistoricalFloor(collectionRaw: string, nftGoA
     const collection = collectionRaw.toLowerCase()
     const [nftgo, reservoir, sudoswap] = 
         await Promise.all([nftGoFloor(collection, nftGoApiKey), reservoirFloor(collection, reservoirApiKey), getSudoswapFloor(collection)])
-    console.log("prices", nftgo, reservoir, sudoswap)
     let currentFloor = Math.min(nftgo.currentFloor, reservoir.currentFloor)
     if(sudoswap !== null){
         currentFloor = Math.min(currentFloor, sudoswap)
@@ -79,5 +81,5 @@ export async function getCurrentAndHistoricalFloor(collectionRaw: string, nftGoA
 
 /* test
 require("dotenv").config()
-getCurrentAndHistoricalFloor("0xeF1a89cbfAbE59397FfdA11Fc5DF293E9bC5Db90", process.env.NFTGO_API_KEY!, process.env.RESERVOIR_API_KEY!).then(console.log)
+getCurrentAndHistoricalFloor("0xCa7cA7BcC765F77339bE2d648BA53ce9c8a262bD", process.env.NFTGO_API_KEY!, process.env.RESERVOIR_API_KEY!).then(console.log)
 */
