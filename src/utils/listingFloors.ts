@@ -65,6 +65,7 @@ export async function getCurrentAndHistoricalFloor(collectionRaw: string, nftGoA
     const collection = collectionRaw.toLowerCase()
     const [nftgo, reservoir, sudoswap] = 
         await Promise.all([nftGoFloor(collection, nftGoApiKey), reservoirFloor(collection, reservoirApiKey), getSudoswapFloor(collection)])
+    console.log("prices", nftgo, reservoir, sudoswap)
     let currentFloor = Math.min(nftgo.currentFloor, reservoir.currentFloor)
     if(sudoswap !== null){
         currentFloor = Math.min(currentFloor, sudoswap)
