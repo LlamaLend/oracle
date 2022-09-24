@@ -22,6 +22,7 @@ const handler = async (_event: any) => {
         })
         return
       } catch (e) {
+        console.log(e)
         // todo: send alert
         // try again
       }
