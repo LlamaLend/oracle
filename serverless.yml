@@ -73,9 +73,9 @@ custom:
   tableName: prod-table
   domainMap:
     prod:
-      domain: api.tubbysea.com
-      certificateArn: "arn:aws:acm:us-east-1:249187628721:certificate/f8230c4f-7cf4-49c5-90d0-e5c49bcef4b6"
-      hostedZone: tubbysea.com
+      domain: oracle.llamalend.com
+      certificateArn: "arn:aws:acm:us-east-1:249187628721:certificate/5145e029-d5dd-4375-8e6d-e41189886697"
+      hostedZone: llamalend.com
   domain: ${self:custom.domainMap.${self:custom.stage}.domain}
   certificateArn: ${self:custom.domainMap.${self:custom.stage}.certificateArn}
   hostedZone: ${self:custom.domainMap.${self:custom.stage}.hostedZone}
@@ -87,7 +87,7 @@ functions:
     memorySize: 2000
     events:
       - http:
-          path: quote/tubby
+          path: quote/{chainId}/{nftContract}
           method: get
   storeFloorPrice:
     handler: src/storeFloorPrice.default

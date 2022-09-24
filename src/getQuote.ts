@@ -1,7 +1,7 @@
 import {ethers} from "ethers"
 import {SecretsManager} from "aws-sdk"
-import { getFloorNow, tubbyAddress } from "./utils";
-import ddb from './dynamodb'
+import ddb from './utils/dynamodb'
+import { getCurrentAndHistoricalFloor } from "./utils/listingFloors";
 
 async function getSecret():Promise<string>{
   const client = new SecretsManager({});
@@ -11,50 +11,71 @@ async function getSecret():Promise<string>{
 
 const privkey = getSecret()
 
-async function sign(price:ethers.BigNumber, deadline:number, nftContract:string){
+async function sign(price:ethers.BigNumber, deadline:number, nftContract:string, chainId:number){
   const signer = new ethers.Wallet(await privkey)
-  const message = ethers.utils.arrayify(new ethers.utils.AbiCoder().encode([ "uint", "uint"], [ price, deadline ])+nftContract.substr(2));
+  const message = ethers.utils.arrayify("0x"+new ethers.utils.AbiCoder().encode([ "uint216", "uint", "uint"], [ price, deadline, chainId ]).substr(10+2)+nftContract.substr(2));
   const signature = ethers.utils.splitSignature(await signer.signMessage(message))
   return signature
 }
 
-const nftContract = "0xCa7cA7BcC765F77339bE2d648BA53ce9c8a262bD"
 
 const handler = async (
-  _event: AWSLambda.APIGatewayEvent
+  event: AWSLambda.APIGatewayEvent
 ): Promise<any> => {
+  const { nftContract, chainId } = event.pathParameters!;
+  const normalizedNftContract = nftContract!.toLowerCase()
+  if(chainId !== "1"){
+    return {
+      statusCode: 400,
+      body: "Only mainnet supported"
+    }
+  }
+
   const now = Math.round(Date.now()/1e3)
   const hoursInWeek = 24*7;
   const weekAgo = now - hoursInWeek*3600;
 
-  const currentFloor = await getFloorNow()
   const weeklyFloors = (await ddb.query({
     ExpressionAttributeValues: {
-        ":pk": `floor#${tubbyAddress}`,
-        ":start": weekAgo*1000,
+        ":pk": `floor#${chainId}#${normalizedNftContract}`,
+        ":start": weekAgo*1000, // ms
     },
     KeyConditionExpression: `PK = :pk AND SK >= :start`,
-  })).Items ?? []
-
-  console.log("items", weeklyFloors.length)
-  if(weeklyFloors.length <= (hoursInWeek - 1)){
+  }))
+  if(weeklyFloors.LastEvaluatedKey !== undefined || weeklyFloors.Items === undefined){
+    // Can't read all items! Someone could be attacking us so error out
     return {
-      statusCode: 501,
-      body: "Not enough historical data",
+      statusCode: 502,
+      body: "Too many items stored"
     }
   }
 
-  const minWeeklyPrice = Math.min(...weeklyFloors.map(w=>w.floor), currentFloor)
+  const currentFloorData = await getCurrentAndHistoricalFloor(normalizedNftContract, process.env.NFTGO_API_KEY!, process.env.RESERVOIR_API_KEY!)
+
+  const lastFloorPoint = weeklyFloors.Items[weeklyFloors.Items.length-1];
+  const diffTime = Date.now() - lastFloorPoint.SK;
+  if(
+    (diffTime > 20*60e3) || // 20 mins
+    (diffTime > 5*60e3 && currentFloorData.currentFloor < lastFloorPoint.floor)
+    ){
+      await ddb.put({
+        PK: `floor#${chainId}#${normalizedNftContract}`,
+        SK: Date.now(),
+        floor: currentFloorData.currentFloor,
+      })
+  }
+
+  const minWeeklyPrice = Math.min(...weeklyFloors.Items.map(w=>w.floor), currentFloorData.weeklyMinimum)
 
   const ethPrice = ethers.utils.parseEther((minWeeklyPrice/3).toString())
 
   const deadline = now + 20*60; // +20 mins
-  const signature = await sign(ethPrice, deadline, nftContract)
+  const signature = await sign(ethPrice, deadline, normalizedNftContract, Number(chainId))
 
   const body = {
     price: ethPrice.toString(),
     deadline,
-    nftContract,
+    normalizedNftContract,
     signature:{
       v: signature.v,
       r: signature.r,
