@@ -53,16 +53,18 @@ const handler = async (
   const currentFloorData = await getCurrentAndHistoricalFloor(normalizedNftContract, process.env.NFTGO_API_KEY!, process.env.RESERVOIR_API_KEY!)
 
   const lastFloorPoint = weeklyFloors.Items[weeklyFloors.Items.length-1];
-  const diffTime = Date.now() - lastFloorPoint.SK;
-  if(
-    (diffTime > 20*60e3) || // 20 mins
-    (diffTime > 5*60e3 && currentFloorData.currentFloor < lastFloorPoint.floor)
-    ){
+  if (lastFloorPoint !== undefined) {
+    const diffTime = Date.now() - lastFloorPoint.SK;
+    if (
+      (diffTime > 20 * 60e3) || // 20 mins
+      (diffTime > 5 * 60e3 && currentFloorData.currentFloor < lastFloorPoint.floor)
+    ) {
       await ddb.put({
         PK: `floor#${chainId}#${normalizedNftContract}`,
         SK: Date.now(),
         floor: currentFloorData.currentFloor,
       })
+    }
   }
 
   const minWeeklyPrice = Math.min(...weeklyFloors.Items.map(w=>w.floor), currentFloorData.weeklyMinimum)
