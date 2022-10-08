@@ -57,7 +57,8 @@ const handler = async (
     const diffTime = Date.now() - lastFloorPoint.SK;
     if (
       (diffTime > 20 * 60e3) || // 20 mins
-      (diffTime > 5 * 60e3 && currentFloorData.currentFloor < lastFloorPoint.floor)
+      (diffTime > 5 * 60e3 && currentFloorData.currentFloor < lastFloorPoint.floor) || // 5 mins && lower floor
+      (currentFloorData.currentFloor <= (lastFloorPoint.floor * 0.8)) // floor is 20% lower or more
     ) {
       await ddb.put({
         PK: `floor#${chainId}#${normalizedNftContract}`,
