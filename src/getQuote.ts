@@ -70,7 +70,7 @@ const handler = async (
 
   const minWeeklyPrice = Math.min(...weeklyFloors.Items.map(w=>w.floor), currentFloorData.weeklyMinimum)
 
-  const ethPrice = ethers.utils.parseEther((minWeeklyPrice/3).toString())
+  const ethPrice = ethers.utils.parseEther((minWeeklyPrice).toString())
 
   const deadline = now + 20*60; // +20 mins
   const signature = await sign(ethPrice, deadline, normalizedNftContract, Number(chainId))
