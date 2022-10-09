@@ -35,9 +35,10 @@ const handler = async (
   const hoursInWeek = 24*7;
   const weekAgo = now - hoursInWeek*3600;
 
+  const floorPK = `floor#${chainId}#${normalizedNftContract}`
   const weeklyFloors = (await ddb.query({
     ExpressionAttributeValues: {
-        ":pk": `floor#${chainId}#${normalizedNftContract}`,
+        ":pk": floorPK,
         ":start": weekAgo*1000, // ms
     },
     KeyConditionExpression: `PK = :pk AND SK >= :start`,
@@ -53,7 +54,13 @@ const handler = async (
   const currentFloorData = await getCurrentAndHistoricalFloor(normalizedNftContract, process.env.NFTGO_API_KEY!, process.env.RESERVOIR_API_KEY!)
 
   const lastFloorPoint = weeklyFloors.Items[weeklyFloors.Items.length-1];
-  if (lastFloorPoint !== undefined) {
+  if (lastFloorPoint === undefined) {
+    await ddb.put({
+      PK: floorPK,
+      SK: Date.now(),
+      floor: currentFloorData.currentFloor,
+    })
+  } else {
     const diffTime = Date.now() - lastFloorPoint.SK;
     if (
       (diffTime > 20 * 60e3) || // 20 mins
@@ -61,7 +68,7 @@ const handler = async (
       (currentFloorData.currentFloor <= (lastFloorPoint.floor * 0.8)) // floor is 20% lower or more
     ) {
       await ddb.put({
-        PK: `floor#${chainId}#${normalizedNftContract}`,
+        PK: floorPK,
         SK: Date.now(),
         floor: currentFloorData.currentFloor,
       })
