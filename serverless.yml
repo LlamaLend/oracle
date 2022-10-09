@@ -77,7 +77,7 @@ custom:
 functions:
   getQuote:
     handler: src/getQuote.default
-    timeout: 120
+    timeout: 30
     memorySize: 2000
     events:
       - http:
