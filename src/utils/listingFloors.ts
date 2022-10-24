@@ -18,7 +18,23 @@ async function reservoirFloor(collection: string, reservoirApiKey: string){
                 'x-api-key': reservoirApiKey 
             }
         }).then(r => r.json());
-        const floors = changes.events.map((event:any)=> event.floorAsk.price)
+        const floors = (changes.events as any[]).filter((event, i, list)=>{
+            if(i === 0){
+                return true
+            }
+            const next = list[i-1].event
+            if(
+                // check that every update lasted longer than 10s
+                (new Date(next.createdAt).getTime() - new Date(event.event.createdAt).getTime()) < 10e3 &&
+                event.floorAsk.price < (0.9 * event.event.previousPrice)
+            ){
+                return false
+            }
+            return true
+        }).map((event:any)=> event.floorAsk.price)
+        if(floors.length < (changes.events.length - 10)){
+            throw new Error(`We are dropping too many events on ${collection} data from Reservoir`)
+        }
         if(currentFloor === undefined){
             // First run
             currentFloor = floors[0]
