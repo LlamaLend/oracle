@@ -75,6 +75,12 @@ custom:
   hostedZone: ${self:custom.domainMap.${self:custom.stage}.hostedZone}
 
 functions:
+  fallback:
+    handler: src/fallback.default
+    events:
+      - http:
+          path: /{params+}
+          method: any
   getQuote:
     handler: src/getQuote.default
     timeout: 30
