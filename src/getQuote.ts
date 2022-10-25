@@ -35,74 +35,79 @@ const handler = async (
   const hoursInWeek = 24*7;
   const weekAgo = now - hoursInWeek*3600;
 
-  const floorPK = `floor#${chainId}#${normalizedNftContract}`
-  const weeklyFloors = (await ddb.query({
-    ExpressionAttributeValues: {
-        ":pk": floorPK,
-        ":start": weekAgo*1000, // ms
-    },
-    KeyConditionExpression: `PK = :pk AND SK >= :start`,
-  }))
-  if(weeklyFloors.LastEvaluatedKey !== undefined || weeklyFloors.Items === undefined){
-    // Can't read all items! Someone could be attacking us so error out
-    return {
-      statusCode: 502,
-      body: "Too many items stored"
+  try{
+    const floorPK = `floor#${chainId}#${normalizedNftContract}`
+    const weeklyFloors = (await ddb.query({
+      ExpressionAttributeValues: {
+          ":pk": floorPK,
+          ":start": weekAgo*1000, // ms
+      },
+      KeyConditionExpression: `PK = :pk AND SK >= :start`,
+    }))
+    if(weeklyFloors.LastEvaluatedKey !== undefined || weeklyFloors.Items === undefined){
+      // Can't read all items! Someone could be attacking us so error out
+      return {
+        statusCode: 502,
+        body: "Too many items stored"
+      }
     }
-  }
 
-  const currentFloorData = await getCurrentAndHistoricalFloor(normalizedNftContract, process.env.NFTGO_API_KEY!, process.env.RESERVOIR_API_KEY!)
+    const currentFloorData = await getCurrentAndHistoricalFloor(normalizedNftContract, process.env.NFTGO_API_KEY!, process.env.RESERVOIR_API_KEY!)
 
-  const lastFloorPoint = weeklyFloors.Items[weeklyFloors.Items.length-1];
-  if (lastFloorPoint === undefined) {
-    await ddb.put({
-      PK: floorPK,
-      SK: Date.now(),
-      floor: currentFloorData.currentFloor,
-    })
-  } else {
-    const diffTime = Date.now() - lastFloorPoint.SK;
-    if (
-      (diffTime > 20 * 60e3) || // 20 mins
-      (diffTime > 5 * 60e3 && currentFloorData.currentFloor < lastFloorPoint.floor) || // 5 mins && lower floor
-      (currentFloorData.currentFloor <= (lastFloorPoint.floor * 0.8)) // floor is 20% lower or more
-    ) {
+    const lastFloorPoint = weeklyFloors.Items[weeklyFloors.Items.length-1];
+    if (lastFloorPoint === undefined) {
       await ddb.put({
         PK: floorPK,
         SK: Date.now(),
         floor: currentFloorData.currentFloor,
       })
+    } else {
+      const diffTime = Date.now() - lastFloorPoint.SK;
+      if (
+        (diffTime > 20 * 60e3) || // 20 mins
+        (diffTime > 5 * 60e3 && currentFloorData.currentFloor < lastFloorPoint.floor) || // 5 mins && lower floor
+        (currentFloorData.currentFloor <= (lastFloorPoint.floor * 0.8)) // floor is 20% lower or more
+      ) {
+        await ddb.put({
+          PK: floorPK,
+          SK: Date.now(),
+          floor: currentFloorData.currentFloor,
+        })
+      }
     }
-  }
 
-  const minWeeklyPrice = Math.min(...weeklyFloors.Items.map(w=>w.floor), currentFloorData.weeklyMinimum)
+    const minWeeklyPrice = Math.min(...weeklyFloors.Items.map(w=>w.floor), currentFloorData.weeklyMinimum)
 
-  const ethPrice = ethers.utils.parseEther((minWeeklyPrice).toString())
+    const ethPrice = ethers.utils.parseEther((minWeeklyPrice).toString())
 
-  const deadline = now + 20*60; // +20 mins
-  const signature = await sign(ethPrice, deadline, normalizedNftContract, Number(chainId))
+    const deadline = now + 20*60; // +20 mins
+    const signature = await sign(ethPrice, deadline, normalizedNftContract, Number(chainId))
 
-  const body = {
-    price: ethPrice.toString(),
-    deadline,
-    normalizedNftContract,
-    signature:{
-      v: signature.v,
-      r: signature.r,
-      s: signature.s
+    const body = {
+      price: ethPrice.toString(),
+      deadline,
+      normalizedNftContract,
+      signature:{
+        v: signature.v,
+        r: signature.r,
+        s: signature.s
+      }
     }
-  }
 
-  return {
-    statusCode: 200,
-    body: JSON.stringify(body),
-    headers: {
-      "Content-Type": "application/json",
-      "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Credentials": "true",
-      "Cache-Control": `max-age=${5*60}`, // 5 mins
-    },
-  };
+    return {
+      statusCode: 200,
+      body: JSON.stringify(body),
+      headers: {
+        "Content-Type": "application/json",
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Credentials": "true",
+        "Cache-Control": `max-age=${5*60}`, // 5 mins
+      },
+    };
+  } catch(e){
+    console.log("Error with collection", normalizedNftContract, e)
+    throw e;
+  }
 };
 
 export default handler

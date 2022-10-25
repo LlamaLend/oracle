@@ -88,6 +88,7 @@ export async function getCurrentAndHistoricalFloor(collectionRaw: string, nftGoA
     if(sudoswap !== null){
         currentFloor = Math.min(currentFloor, sudoswap)
     }
+    console.log("Floor values:", nftgo.weeklyMinimum, reservoir.weeklyMinimum, sudoswap, currentFloor)
     const weeklyMinimum = Math.min(nftgo.weeklyMinimum, reservoir.weeklyMinimum, currentFloor)
     return {
         currentFloor,
@@ -95,7 +96,7 @@ export async function getCurrentAndHistoricalFloor(collectionRaw: string, nftGoA
     }
 }
 
-/* test
+/*
 require("dotenv").config()
-getCurrentAndHistoricalFloor("0xCa7cA7BcC765F77339bE2d648BA53ce9c8a262bD", process.env.NFTGO_API_KEY!, process.env.RESERVOIR_API_KEY!).then(console.log)
+getCurrentAndHistoricalFloor("0xef1a89cbfabe59397ffda11fc5df293e9bc5db90", process.env.NFTGO_API_KEY!, process.env.RESERVOIR_API_KEY!).then(console.log)
 */

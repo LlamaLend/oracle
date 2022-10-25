@@ -6,7 +6,8 @@ query Floor($collection: ID!, $firstItem: ID!){
 	collection(id: $collection) {
 		pairs(first: 1000, where: {
 			numNfts_gt: 0,
-			id_gte: $firstItem
+			id_gte: $firstItem,
+			token: null
 		}) {
 			id
 			type
