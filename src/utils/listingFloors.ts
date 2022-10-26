@@ -40,7 +40,8 @@ async function reservoirFloor(collection: string, reservoirApiKey: string){
             currentFloor = floors[0]
             weeklyMinimum = floors[0]
         }
-        weeklyMinimum = Math.min(weeklyMinimum, ...floors)
+        const oldestPrice = changes.events[changes.events.length-1].event.previousPrice
+        weeklyMinimum = Math.min(weeklyMinimum, ...floors, oldestPrice)
         continuation = changes.continuation;
     } while(continuation !== null)
     if(currentFloor === undefined){
