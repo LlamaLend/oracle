@@ -27,12 +27,14 @@ const handler = async (_event: any) => {
         // try again
       }
       // All tries failed, we could be getting attacked, store a 0 to disable oracle
+/*
       await ddb.put({
         PK: `floor#${chainId}#${collection}`,
         SK: Date.now(),
         floor: 0,
         error: true,
       })
+*/
     }
   }))
 };
