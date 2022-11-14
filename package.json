@@ -6,7 +6,7 @@
     "deploy": "export NODE_OPTIONS=--max-old-space-size=6144 && sls deploy --stage prod",
     "format": "prettier --write \"src/**/*.ts\"",
     "serve": "node --max-old-space-size=8192 node_modules/serverless/bin/serverless offline start",
-    "test": "jest",
+    "test": "ts-node src/utils/listingFloors.test.ts",
     "test:watch": "jest --watch",
     "build": "sls webpack"
   },

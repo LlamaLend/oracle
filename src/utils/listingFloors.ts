@@ -7,6 +7,7 @@ async function reservoirFloor(collection: string, reservoirApiKey: string){
     let continuation;
     const weekAgo = Math.round(Date.now()/1e3 - 7*24*3600);
     let weeklyMinimum, currentFloor = undefined;
+    let flashCrashes = 0;
     do{
         // IMPORTANT: collection must be lowercase
         let url = `https://api.reservoir.tools/events/collections/floor-ask/v1?collection=${collection}&startTimestamp=${weekAgo}&sortDirection=desc&limit=1000`
@@ -22,18 +23,24 @@ async function reservoirFloor(collection: string, reservoirApiKey: string){
             if(i === 0){
                 return true
             }
-            const next = list[i-1].event
+            const next = list[i-1]
             if(
-                // check that every update lasted longer than 10s
-                (new Date(next.createdAt).getTime() - new Date(event.event.createdAt).getTime()) < 10e3 &&
-                event.floorAsk.price < (0.9 * event.event.previousPrice)
+                // update lasted longer than 50s
+                (new Date(next.event.createdAt).getTime() - new Date(event.event.createdAt).getTime()) < 50e3 &&
+                // it's a flash crash
+                event.floorAsk.price < (0.9 * event.event.previousPrice) &&
+                event.floorAsk.price < (0.9 * next.floorAsk.price)
             ){
+                flashCrashes++;
                 return false
             }
             return true
         }).map((event:any)=> event.floorAsk.price)
         if(floors.length < (changes.events.length - 10)){
             throw new Error(`We are dropping too many events on ${collection} data from Reservoir`)
+        }
+        if(flashCrashes > 10){ // > 500s
+            throw new Error("Too many flash crashes")
         }
         if(currentFloor === undefined){
             // First run
@@ -96,8 +103,3 @@ export async function getCurrentAndHistoricalFloor(collectionRaw: string, nftGoA
         weeklyMinimum
     }
 }
-
-/*
-require("dotenv").config()
-getCurrentAndHistoricalFloor("0xef1a89cbfabe59397ffda11fc5df293e9bc5db90", process.env.NFTGO_API_KEY!, process.env.RESERVOIR_API_KEY!).then(console.log)
-*/
