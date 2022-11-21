@@ -1,7 +1,7 @@
 import {ethers} from "ethers"
 import {SecretsManager} from "aws-sdk"
 import ddb from './utils/dynamodb'
-import { getCurrentAndHistoricalFloor } from "./utils/listingFloors";
+import { getCurrentAndHistoricalFloor, ReturnableError } from "./utils/listingFloors";
 
 async function getSecret():Promise<string>{
   const client = new SecretsManager({});
@@ -106,6 +106,20 @@ const handler = async (
     };
   } catch(e){
     console.log("Error with collection", normalizedNftContract, e)
+    if(e instanceof ReturnableError){
+      return {
+        statusCode: 400,
+        body: JSON.stringify({
+          error: e.message
+        }),
+        headers: {
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Credentials": "true",
+          "Cache-Control": `max-age=${5*60}`, // 5 mins
+        },
+      };
+    }
     throw e;
   }
 };

@@ -1,6 +1,13 @@
 import fetch from "node-fetch"
 import { getSudoswapFloor } from "./sudoswap";
 
+export class ReturnableError extends Error {
+    constructor(message:string) {
+      super(message);
+      this.name = "ReturnableError";
+    }
+  }
+
 // https://docs.reservoir.tools/reference/geteventscollectionsflooraskv1
 // test demo key is 'demo-api-key'
 async function reservoirFloor(collection: string, reservoirApiKey: string){
@@ -52,7 +59,7 @@ async function reservoirFloor(collection: string, reservoirApiKey: string){
         continuation = changes.continuation;
     } while(continuation !== null)
     if(currentFloor === undefined){
-        throw new Error(`Can't find any historical data for ${collection} on Reservoir`)
+        throw new ReturnableError(`Can't find any historical data for ${collection} on Reservoir`)
     }
     return {
         currentFloor,
@@ -80,7 +87,7 @@ async function nftGoFloor(collection: string) {
     let callResults = await nftGoQueries(collection, apiKeys[0], now, day3ago, weekAgo);
     while (callResults === null) {
         apiInd++;
-        if (apiInd === apiKeys.length) throw new Error("Out of API keys");
+        if (apiInd === apiKeys.length) throw new ReturnableError("Out of API keys");
         callResults = await nftGoQueries(collection, apiKeys[apiInd], now, day3ago, weekAgo);
     }
 
@@ -89,7 +96,7 @@ async function nftGoFloor(collection: string) {
     const historicalFloorApiGo3d = callResults[2];
 
     if (currentFloorApiGo.floor_price.crypto_unit !== "ETH") {
-        throw new Error(`Floor of ${collection} in NftGo API is not priced in ETH`)
+        throw new ReturnableError(`Floor of ${collection} in NftGo API is not priced in ETH`)
     }
     const currentFloor = currentFloorApiGo.floor_price.value;
     return {
@@ -103,7 +110,13 @@ async function nftGoQueries(collection: string, nftGoApi: string, now : Date, da
         headers: {
             'X-API-KEY': nftGoApi
         }
-    }).then(r => r.json());
+    }).then(r => {
+        if(r.status===404){
+            throw new ReturnableError("Collection not supported by NFTGo")
+        } else {
+            return r.json()
+        }
+    });
     const [currentFloorApiGo, historicalFloorApiGo4d, historicalFloorApiGo3d] = await Promise.all([
         nftgoReq(`https://data-api.nftgo.io/eth/v1/collection/${collection}/metrics`),
         nftgoReq(`https://data-api.nftgo.io/eth/v1/collection/${collection}/chart/floor-price?start_time=${date2utc(day3ago)}&end_time=${date2utc(now)}`),
