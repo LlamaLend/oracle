@@ -63,21 +63,31 @@ async function reservoirFloor(collection: string, reservoirApiKey: string){
 const date2utc = (d:Date) => encodeURIComponent(d.toISOString())
 
 // https://docs.nftgo.io/reference/get_floor_price_chart_eth_v1_collection__contract_address__chart_floor_price_get-1
-async function nftGoFloor(collection: string, nftGoApiKey: string) {
-    const nftgoReq = (url:string) => fetch(url, {
-        headers: {
-            'X-API-KEY': nftGoApiKey
-        }
-    }).then(r => r.json());
-    const now = new Date()
+async function nftGoFloor(collection: string) {
+    const apiKeys = [
+        process.env.NFTGO_API_KEY1!,
+        process.env.NFTGO_API_KEY2!,
+        process.env.NFTGO_API_KEY3!,
+        process.env.NFTGO_API_KEY4!,
+        process.env.NFTGO_API_KEY5!
+    ];
+    let apiInd = 0;
+    const now = new Date();
     // separate nftgo api in 2 requests because if you request <4 days you get many more datapoints
     const day3ago = new Date(Number(now) - 3*24*3600e3);
     const weekAgo = new Date(Number(day3ago) - 4*24*3600e3);
-    const [currentFloorApiGo, historicalFloorApiGo4d, historicalFloorApiGo3d] = await Promise.all([
-        nftgoReq(`https://data-api.nftgo.io/eth/v1/collection/${collection}/metrics`),
-        nftgoReq(`https://data-api.nftgo.io/eth/v1/collection/${collection}/chart/floor-price?start_time=${date2utc(day3ago)}&end_time=${date2utc(now)}`),
-        nftgoReq(`https://data-api.nftgo.io/eth/v1/collection/${collection}/chart/floor-price?start_time=${date2utc(weekAgo)}&end_time=${date2utc(day3ago)}`),
-    ])
+    
+    let callResults = await nftGoQueries(collection, apiKeys[0], now, day3ago, weekAgo);
+    while (callResults === null) {
+        apiInd++;
+        if (apiInd === apiKeys.length) throw new Error("Out of API keys");
+        callResults = await nftGoQueries(collection, apiKeys[apiInd], now, day3ago, weekAgo);
+    }
+
+    const currentFloorApiGo = callResults[0];
+    const historicalFloorApiGo4d = callResults[1];
+    const historicalFloorApiGo3d = callResults[2];
+
     if (currentFloorApiGo.floor_price.crypto_unit !== "ETH") {
         throw new Error(`Floor of ${collection} in NftGo API is not priced in ETH`)
     }
@@ -88,10 +98,38 @@ async function nftGoFloor(collection: string, nftGoApiKey: string) {
     }
 }
 
-export async function getCurrentAndHistoricalFloor(collectionRaw: string, nftGoApiKey: string, reservoirApiKey: string){
+async function nftGoQueries(collection: string, nftGoApi: string, now : Date, day3ago: Date, weekAgo: Date) {
+    const nftgoReq = (url:string) => fetch(url, {
+        headers: {
+            'X-API-KEY': nftGoApi
+        }
+    }).then(r => r.json());
+    const [currentFloorApiGo, historicalFloorApiGo4d, historicalFloorApiGo3d] = await Promise.all([
+        nftgoReq(`https://data-api.nftgo.io/eth/v1/collection/${collection}/metrics`),
+        nftgoReq(`https://data-api.nftgo.io/eth/v1/collection/${collection}/chart/floor-price?start_time=${date2utc(day3ago)}&end_time=${date2utc(now)}`),
+        nftgoReq(`https://data-api.nftgo.io/eth/v1/collection/${collection}/chart/floor-price?start_time=${date2utc(weekAgo)}&end_time=${date2utc(day3ago)}`),
+    ])
+
+    if (
+      currentFloorApiGo.msg === "Quota Limit Exceeded" ||
+      historicalFloorApiGo4d.msg === "Quota Limit Exceeded" ||
+      historicalFloorApiGo3d.msg === "Quota Limit Exceeded"
+    ) {
+      return null;
+    } else {
+      return [
+        currentFloorApiGo,
+        historicalFloorApiGo4d,
+        historicalFloorApiGo3d,
+      ];
+    }
+    
+}
+
+export async function getCurrentAndHistoricalFloor(collectionRaw: string, reservoirApiKey: string){
     const collection = collectionRaw.toLowerCase()
     const [nftgo, reservoir, sudoswap] = 
-        await Promise.all([nftGoFloor(collection, nftGoApiKey), reservoirFloor(collection, reservoirApiKey), getSudoswapFloor(collection)])
+        await Promise.all([nftGoFloor(collection), reservoirFloor(collection, reservoirApiKey), getSudoswapFloor(collection)])
     let currentFloor = Math.min(nftgo.currentFloor, reservoir.currentFloor)
     if(sudoswap !== null){
         currentFloor = Math.min(currentFloor, sudoswap)

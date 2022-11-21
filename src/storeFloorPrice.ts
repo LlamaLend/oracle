@@ -13,7 +13,7 @@ const handler = async (_event: any) => {
     for (let i = 0; i < TOTAL_RETRIES; i++) {
       try {
         // todo: optimize by only getting current floor
-        const { currentFloor } = await getCurrentAndHistoricalFloor(collection, process.env.NFTGO_API_KEY!, process.env.RESERVOIR_API_KEY!)
+        const { currentFloor } = await getCurrentAndHistoricalFloor(collection, process.env.RESERVOIR_API_KEY!)
         const now = Date.now()
         await ddb.put({
           PK: `floor#${chainId}#${collection}`,
