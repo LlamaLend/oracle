@@ -52,7 +52,7 @@ const handler = async (
       }
     }
 
-    const currentFloorData = await getCurrentAndHistoricalFloor(normalizedNftContract, process.env.NFTGO_API_KEY!, process.env.RESERVOIR_API_KEY!)
+    const currentFloorData = await getCurrentAndHistoricalFloor(normalizedNftContract, process.env.RESERVOIR_API_KEY!)
 
     const lastFloorPoint = weeklyFloors.Items[weeklyFloors.Items.length-1];
     if (lastFloorPoint === undefined) {
