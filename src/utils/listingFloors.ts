@@ -1,5 +1,6 @@
 import fetch from "node-fetch"
 import { getSudoswapFloor } from "./sudoswap";
+import { gql, request } from "graphql-request"
 
 export class ReturnableError extends Error {
     constructor(message:string) {
@@ -67,88 +68,46 @@ async function reservoirFloor(collection: string, reservoirApiKey: string){
     }
 }
 
-const date2utc = (d:Date) => encodeURIComponent(d.toISOString())
-
-// https://docs.nftgo.io/reference/get_floor_price_chart_eth_v1_collection__contract_address__chart_floor_price_get-1
-async function nftGoFloor(collection: string) {
-    const apiKeys = [
-        process.env.NFTGO_API_KEY1!,
-        process.env.NFTGO_API_KEY2!,
-        process.env.NFTGO_API_KEY3!,
-        process.env.NFTGO_API_KEY4!,
-        process.env.NFTGO_API_KEY5!
-    ];
-    let apiInd = 0;
-    const now = new Date();
-    // separate nftgo api in 2 requests because if you request <4 days you get many more datapoints
-    const day3ago = new Date(Number(now) - 3*24*3600e3);
-    const weekAgo = new Date(Number(day3ago) - 4*24*3600e3);
-    
-    let callResults = await nftGoQueries(collection, apiKeys[0], now, day3ago, weekAgo);
-    while (callResults === null) {
-        apiInd++;
-        if (apiInd === apiKeys.length) throw new ReturnableError("Out of API keys");
-        callResults = await nftGoQueries(collection, apiKeys[apiInd], now, day3ago, weekAgo);
-    }
-
-    const currentFloorApiGo = callResults[0];
-    const historicalFloorApiGo4d = callResults[1];
-    const historicalFloorApiGo3d = callResults[2];
-
-    if (currentFloorApiGo.floor_price.crypto_unit !== "ETH") {
-        throw new ReturnableError(`Floor of ${collection} in NftGo API is not priced in ETH`)
-    }
-    const currentFloor = currentFloorApiGo.floor_price.value;
-    return {
-        currentFloor,
-        weeklyMinimum: Math.min(...historicalFloorApiGo4d.y, ...historicalFloorApiGo3d.y, currentFloor)
-    }
+const definedRequest = gql`
+query getWeeklyFloor($collection: String!){
+	getDetailedNftStats(
+		collectionAddress: $collection,
+		networkId: 1
+	){
+		stats_week1{
+			start
+			end
+			statsNetworkBaseToken{
+				listingFloor{
+					currentValue
+				}
+			}
+		}
+	}
 }
+`
 
-async function nftGoQueries(collection: string, nftGoApi: string, now : Date, day3ago: Date, weekAgo: Date) {
-    const nftgoReq = (url:string) => fetch(url, {
-        headers: {
-            'X-API-KEY': nftGoApi
-        }
-    }).then(r => {
-        if(r.status===404){
-            throw new ReturnableError("Collection not supported by NFTGo")
-        } else {
-            return r.json()
-        }
-    });
-    const [currentFloorApiGo, historicalFloorApiGo4d, historicalFloorApiGo3d] = await Promise.all([
-        nftgoReq(`https://data-api.nftgo.io/eth/v1/collection/${collection}/metrics`),
-        nftgoReq(`https://data-api.nftgo.io/eth/v1/collection/${collection}/chart/floor-price?start_time=${date2utc(day3ago)}&end_time=${date2utc(now)}`),
-        nftgoReq(`https://data-api.nftgo.io/eth/v1/collection/${collection}/chart/floor-price?start_time=${date2utc(weekAgo)}&end_time=${date2utc(day3ago)}`),
-    ])
-
-    if (
-      currentFloorApiGo.msg === "Quota Limit Exceeded" ||
-      historicalFloorApiGo4d.msg === "Quota Limit Exceeded" ||
-      historicalFloorApiGo3d.msg === "Quota Limit Exceeded"
-    ) {
-      return null;
-    } else {
-      return [
-        currentFloorApiGo,
-        historicalFloorApiGo4d,
-        historicalFloorApiGo3d,
-      ];
+async function definedFloor(collection: string) {
+    const floor = await request("https://api.defined.fi/", definedRequest, {
+        collection
+    }, {
+        "x-api-key": process.env.DEFINED_API_KEY!
+    })
+    return {
+        weeklyMinimum: Number(floor.getDetailedNftStats.stats_week1.statsNetworkBaseToken.listingFloor.currentValue),
     }
-    
 }
 
 export async function getCurrentAndHistoricalFloor(collectionRaw: string, reservoirApiKey: string){
     const collection = collectionRaw.toLowerCase()
-    const [nftgo, reservoir, sudoswap] = 
-        await Promise.all([nftGoFloor(collection), reservoirFloor(collection, reservoirApiKey), getSudoswapFloor(collection)])
-    let currentFloor = Math.min(nftgo.currentFloor, reservoir.currentFloor)
+    const [defined, reservoir, sudoswap] = 
+        await Promise.all([definedFloor(collection), reservoirFloor(collection, reservoirApiKey), getSudoswapFloor(collection)])
+    let currentFloor = reservoir.currentFloor
     if(sudoswap !== null){
         currentFloor = Math.min(currentFloor, sudoswap)
     }
-    console.log("Floor values:", nftgo.weeklyMinimum, reservoir.weeklyMinimum, sudoswap, currentFloor)
-    const weeklyMinimum = Math.min(nftgo.weeklyMinimum, reservoir.weeklyMinimum, currentFloor)
+    console.log("Floor values:", defined.weeklyMinimum, reservoir.weeklyMinimum, sudoswap, currentFloor)
+    const weeklyMinimum = Math.min(defined.weeklyMinimum, reservoir.weeklyMinimum, currentFloor)
     return {
         currentFloor,
         weeklyMinimum
