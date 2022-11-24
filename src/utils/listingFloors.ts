@@ -98,6 +98,7 @@ async function definedFloor(collection: string) {
     }
 }
 
+/*
 async function nftbankFloor(collection: string) {
   const now = Math.round(Date.now() / 1e3);
   const weekAgo = now - 604800;
@@ -129,17 +130,18 @@ async function nftbankFloor(collection: string) {
     weeklyMinimum,
   };
 }
+*/
 
 export async function getCurrentAndHistoricalFloor(collectionRaw: string, reservoirApiKey: string){
     const collection = collectionRaw.toLowerCase()
-    const [defined, reservoir, sudoswap, nftbank] = 
-        await Promise.all([definedFloor(collection), reservoirFloor(collection, reservoirApiKey), getSudoswapFloor(collection), nftbankFloor(collection)])
+    const [defined, reservoir, sudoswap] = 
+        await Promise.all([definedFloor(collection), reservoirFloor(collection, reservoirApiKey), getSudoswapFloor(collection)])
     let currentFloor = reservoir.currentFloor
     if(sudoswap !== null){
         currentFloor = Math.min(currentFloor, sudoswap)
     }
-    console.log("Floor values:", defined.weeklyMinimum, reservoir.weeklyMinimum, sudoswap, currentFloor, nftbank.weeklyMinimum);
-    const weeklyMinimum = Math.min(defined.weeklyMinimum, reservoir.weeklyMinimum, currentFloor, nftbank.weeklyMinimum)
+    console.log("Floor values:", defined.weeklyMinimum, reservoir.weeklyMinimum, sudoswap, currentFloor);
+    const weeklyMinimum = Math.min(defined.weeklyMinimum, reservoir.weeklyMinimum, currentFloor)
     return {
         currentFloor,
         weeklyMinimum

@@ -1,5 +1,5 @@
 import { getCurrentAndHistoricalFloor } from "./listingFloors"
 
 require("dotenv").config()
-getCurrentAndHistoricalFloor("0x2c889A24AF0d0eC6337DB8fEB589fa6368491146", process.env.RESERVOIR_API_KEY!).then(console.log)
+getCurrentAndHistoricalFloor("0xF17Bb82b6e9cC0075ae308e406e5198BA7320545", process.env.RESERVOIR_API_KEY!).then(console.log)
 
