@@ -98,16 +98,48 @@ async function definedFloor(collection: string) {
     }
 }
 
+async function nftbankFloor(collection: string) {
+  const now = Math.round(Date.now() / 1e3);
+  const weekAgo = now - 604800;
+  const weekFloors: number[] = await fetch(
+    `https://api.nftbank.run/v1/collection/${collection}/floor/history?networkId=ethereum&interval=daily&window=7d&from=${weekAgo}&to=${now}`,
+    {
+      headers: {
+        "X-API-KEY": process.env.NFTBANK_KEY!,
+      },
+    }
+  ).then(async (r) => {
+    return (await r.json()).data.data.map((item: any) =>
+      Number(item.floor.eth)
+    );
+  });
+  const currentFloor: number = await fetch(
+    `https://api.nftbank.run/v1/collection/${collection}/floor?networkId=ethereum`,
+    {
+      headers: {
+        "X-API-KEY": process.env.NFTBANK_KEY!,
+      },
+    }
+  ).then(async (r) => {
+    return Number((await r.json()).data.floor.eth);
+  });
+  const weeklyMinimum = Math.min(...weekFloors, currentFloor);
+  return {
+    currentFloor,
+    weeklyMinimum,
+  };
+}
+
 export async function getCurrentAndHistoricalFloor(collectionRaw: string, reservoirApiKey: string){
     const collection = collectionRaw.toLowerCase()
-    const [defined, reservoir, sudoswap] = 
-        await Promise.all([definedFloor(collection), reservoirFloor(collection, reservoirApiKey), getSudoswapFloor(collection)])
+    const [defined, reservoir, sudoswap, nftbank] = 
+        await Promise.all([definedFloor(collection), reservoirFloor(collection, reservoirApiKey), getSudoswapFloor(collection), nftbankFloor(collection)])
     let currentFloor = reservoir.currentFloor
     if(sudoswap !== null){
         currentFloor = Math.min(currentFloor, sudoswap)
     }
-    console.log("Floor values:", defined.weeklyMinimum, reservoir.weeklyMinimum, sudoswap, currentFloor)
-    const weeklyMinimum = Math.min(defined.weeklyMinimum, reservoir.weeklyMinimum, currentFloor)
+    console.log("Floor values:", defined.weeklyMinimum, reservoir.weeklyMinimum, sudoswap, currentFloor, nftbank.weeklyMinimum);
+    const weeklyMinimum = Math.min(defined.weeklyMinimum, reservoir.weeklyMinimum, currentFloor, nftbank.weeklyMinimum)
     return {
         currentFloor,
         weeklyMinimum
