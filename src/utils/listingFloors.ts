@@ -93,8 +93,9 @@ async function definedFloor(collection: string) {
     }, {
         "x-api-key": process.env.DEFINED_API_KEY!
     })
+    const weeklyMin = floor.getDetailedNftStats.stats_week1.statsNetworkBaseToken.listingFloor.currentValue
     return {
-        weeklyMinimum: Number(floor.getDetailedNftStats.stats_week1.statsNetworkBaseToken.listingFloor.currentValue),
+        weeklyMinimum: weeklyMin === null?null:Number(weeklyMin)
     }
 }
 
@@ -141,7 +142,10 @@ export async function getCurrentAndHistoricalFloor(collectionRaw: string, reserv
         currentFloor = Math.min(currentFloor, sudoswap)
     }
     console.log("Floor values:", defined.weeklyMinimum, reservoir.weeklyMinimum, sudoswap, currentFloor);
-    const weeklyMinimum = Math.min(defined.weeklyMinimum, reservoir.weeklyMinimum, currentFloor)
+    let weeklyMinimum = Math.min(reservoir.weeklyMinimum, currentFloor)
+    if(defined.weeklyMinimum !== null){
+        weeklyMinimum = Math.min(weeklyMinimum, defined.weeklyMinimum)
+    }
     return {
         currentFloor,
         weeklyMinimum
