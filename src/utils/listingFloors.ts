@@ -11,9 +11,15 @@ export class ReturnableError extends Error {
 
 // https://docs.reservoir.tools/reference/geteventscollectionsflooraskv1
 // test demo key is 'demo-api-key'
-async function reservoirFloor(collection: string, reservoirApiKey: string){
+async function reservoirFloor(collection: string, reservoirApiKey: string, startDaysAgo: number) : Promise<{
+        currentFloor: number,
+        weeklyMinimum: number,
+    }>{
+  if(startDaysAgo > 14){
+    throw new Error("Collection had no floor changes for 2 weeks")
+  }
     let continuation;
-    const weekAgo = Math.round(Date.now()/1e3 - 7*24*3600);
+    const weekAgo = Math.round(Date.now()/1e3 - startDaysAgo*24*3600);
     let weeklyMinimum, currentFloor = undefined;
     let flashCrashes = 0;
     do{
@@ -27,6 +33,9 @@ async function reservoirFloor(collection: string, reservoirApiKey: string){
                 'x-api-key': reservoirApiKey 
             }
         }).then(r => r.json());
+        if(changes.events.length == 0){
+          return reservoirFloor(collection, reservoirApiKey, startDaysAgo+7)
+        }
         const floors = (changes.events as any[]).filter((event, i, list)=>{
             if(i === 0){
                 return true
@@ -136,7 +145,7 @@ async function nftbankFloor(collection: string) {
 export async function getCurrentAndHistoricalFloor(collectionRaw: string, reservoirApiKey: string){
     const collection = collectionRaw.toLowerCase()
     const [defined, reservoir, sudoswap] = 
-        await Promise.all([definedFloor(collection), reservoirFloor(collection, reservoirApiKey), getSudoswapFloor(collection)])
+        await Promise.all([definedFloor(collection), reservoirFloor(collection, reservoirApiKey, 7), getSudoswapFloor(collection)])
     let currentFloor = reservoir.currentFloor
     if(sudoswap !== null){
         currentFloor = Math.min(currentFloor, sudoswap)
