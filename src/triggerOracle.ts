@@ -73,7 +73,7 @@ const handler = async (
         const timestamp = group[0].nextPayment
         const price = await getRollingPrice24h(chainId, token.toLowerCase(), timestamp)
         const decimalOffset = 10**(18-Number(decimals))
-        const formattedPrice = BigNumber.from(10).pow(18).div((price*decimalOffset).toFixed(0))
+        const formattedPrice = (1e28/(price*decimalOffset)).toFixed(0)
         //console.log(price, group.map(p=>p.streamId), token, formattedPrice, timestamp)
         await contract.withdraw(group.map(p=>p.streamId), token, formattedPrice, timestamp)
     }
