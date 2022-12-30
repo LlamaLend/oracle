@@ -61,4 +61,7 @@ const tokens = {
     5:{
         "0x58d7ccbe88fe805665eb0b6c219f2c27d351e649": ["ethereum", "ETHUSDT"], // ETH from https://token-faucet.defillama.com/
     },
+    10:{
+        "0x4200000000000000000000000000000000000042": ["optimism", "OPUSDT"], // OP
+    },
 } as any
