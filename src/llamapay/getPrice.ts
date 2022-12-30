@@ -59,6 +59,6 @@ const tokens = {
         "0x2260fac5e5542a773aa44fbcfedf7c193bc2c599": ["bitcoin", "BTCUSDT"], // WBTC
     },
     5:{
-        "0x58d7ccbe88fe805665eb0b6c219f2c27d351e649": ["bitcoin", "BTCUSDT"], // WBTC from https://token-faucet.defillama.com/
+        "0x58d7ccbe88fe805665eb0b6c219f2c27d351e649": ["ethereum", "ETHUSDT"], // ETH from https://token-faucet.defillama.com/
     },
 } as any

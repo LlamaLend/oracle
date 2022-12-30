@@ -1,4 +1,4 @@
-import { BigNumber, ethers } from "ethers"
+import { ethers } from "ethers"
 import request, { gql } from "graphql-request";
 import { getRollingPrice24h, now } from "./llamapay/getPrice";
 
@@ -62,7 +62,9 @@ const handler = async (
     const wallet = new ethers.Wallet(process.env.LLAMAPAY_ORACLE_PRIVATE_KEY!, new ethers.providers.JsonRpcProvider("https://eth-goerli.public.blastapi.io"))
     const chainId = await wallet.getChainId()
     for(const group of groups){
-        const contract = new ethers.Contract(group[0].pool.poolContract, [
+        const contractAddress = group[0].pool.poolContract
+        try{
+        const contract = new ethers.Contract(contractAddress, [
             "function withdraw(uint256[] calldata ids,address _token,uint256 _price,uint256 _timestamp)"
         ], wallet)
         const token = group[0].pool.token.address
@@ -73,9 +75,12 @@ const handler = async (
         const timestamp = group[0].nextPayment
         const price = await getRollingPrice24h(chainId, token.toLowerCase(), timestamp)
         const decimalOffset = 10**(18-Number(decimals))
-        const formattedPrice = (1e28/(price*decimalOffset)).toFixed(0)
+        const formattedPrice = BigInt(1e28/(price*decimalOffset)).toString()
         //console.log(price, group.map(p=>p.streamId), token, formattedPrice, timestamp)
         await contract.withdraw(group.map(p=>p.streamId), token, formattedPrice, timestamp)
+        } catch(e){
+            console.error(`Couldn't handle withdrawals for pool ${contractAddress}`)
+        }
     }
 
     return {
