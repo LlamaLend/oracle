@@ -80,7 +80,7 @@ const handler = async (
 
     const ethPrice = ethers.utils.parseEther((minWeeklyPrice).toString())
 
-    const deadline = now + 20*60; // +20 mins
+    const deadline = now + 10*60; // +10 mins
     const signature = await sign(ethPrice, deadline, normalizedNftContract, Number(chainId))
 
     const body = {
