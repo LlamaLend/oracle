@@ -40,7 +40,7 @@ const handler = async (
     _event: AWSLambda.APIGatewayEvent
 ): Promise<any> => {
     const currentTime = now()
-    const { payments } = (await request("https://api.thegraph.com/subgraphs/name/nemusonaneko/scheduledtransfers-subgraph", Payments)) as {
+    const { payments } = (await request("https://api.thegraph.com/subgraphs/name/nemusonaneko/scheduledtransfers-optimism", Payments)) as {
         payments: Payment[]
     }
     const paymentsReady = payments.map(p => {
@@ -59,7 +59,7 @@ const handler = async (
         return acc
     }, {} as { [id: string]: PPayment[] }))
 
-    const wallet = new ethers.Wallet(process.env.LLAMAPAY_ORACLE_PRIVATE_KEY!, new ethers.providers.JsonRpcProvider("https://eth-goerli.public.blastapi.io"))
+    const wallet = new ethers.Wallet(process.env.LLAMAPAY_ORACLE_PRIVATE_KEY!, new ethers.providers.JsonRpcProvider("https://mainnet.optimism.io"))
     const chainId = await wallet.getChainId()
     for (const group of groups) {
         const contractAddress = group[0].pool.poolContract
@@ -79,7 +79,7 @@ const handler = async (
             //console.log(price, group.map(p=>p.streamId), token, formattedPrice, timestamp)
             await contract.withdraw(group.map(p => p.streamId), token, formattedPrice, timestamp)
         } catch (e) {
-            console.error(`Couldn't handle withdrawals for pool ${contractAddress}`)
+            console.error(`Couldn't handle withdrawals for pool ${contractAddress}`, e)
         }
     }
 
