@@ -147,17 +147,14 @@ async function nftbankFloor(collection: string) {
 
 export async function getCurrentAndHistoricalFloor(collectionRaw: string, reservoirApiKey: string){
     const collection = collectionRaw.toLowerCase()
-    const [defined, reservoir, sudoswap] = 
-        await Promise.all([definedFloor(collection), reservoirFloor(collection, reservoirApiKey, 7), getSudoswapFloor(collection)])
+    const [reservoir, sudoswap] = 
+        await Promise.all([reservoirFloor(collection, reservoirApiKey, 7), getSudoswapFloor(collection)])
     let currentFloor = reservoir.currentFloor
     if(sudoswap !== null){
         currentFloor = Math.min(currentFloor, sudoswap)
     }
-    console.log("Floor values:", defined.weeklyMinimum, reservoir.weeklyMinimum, sudoswap, currentFloor);
+    console.log("Floor values:", reservoir.weeklyMinimum, sudoswap, currentFloor);
     let weeklyMinimum = Math.min(reservoir.weeklyMinimum, currentFloor)
-    if(defined.weeklyMinimum !== null){
-        weeklyMinimum = Math.min(weeklyMinimum, defined.weeklyMinimum)
-    }
     return {
         currentFloor,
         weeklyMinimum
