@@ -67,9 +67,9 @@ custom:
   tableName: prod-table
   domainMap:
     prod:
-      domain: oracle.llamalend.com
-      certificateArn: "arn:aws:acm:us-east-1:249187628721:certificate/5145e029-d5dd-4375-8e6d-e41189886697"
-      hostedZone: llamalend.com
+      domain: oracle.llamalendnft.com
+      certificateArn: "arn:aws:acm:us-east-1:249187628721:certificate/c730f2cb-fca7-4823-8b74-129298c9e274"
+      hostedZone: llamalendnft.com
   domain: ${self:custom.domainMap.${self:custom.stage}.domain}
   certificateArn: ${self:custom.domainMap.${self:custom.stage}.certificateArn}
   hostedZone: ${self:custom.domainMap.${self:custom.stage}.hostedZone}

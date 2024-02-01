@@ -50,16 +50,6 @@ Resources:
         ViewerCertificate:
           AcmCertificateArn: ${self:custom.certificateArn}
           SslSupportMethod: sni-only
-  ApiDNSName:
-    Type: AWS::Route53::RecordSetGroup
-    Properties:
-      HostedZoneName: ${self:custom.hostedZone}.
-      RecordSets:
-      - Name: ${self:custom.domain}
-        Type: A
-        AliasTarget:
-          HostedZoneId: Z2FDTNDATAQYW2
-          DNSName: !GetAtt [ApiCloudfront, DomainName]
 Outputs:
   ApiCloudfrontDistribution:
     Value: !Ref 'ApiCloudfront'
